@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React, { useState } from 'react';
 import { Box, useMediaQuery, useTheme, Drawer, IconButton } from '@mui/material';
 import { Menu as MenuIcon, Close as CloseIcon } from '@mui/icons-material';
@@ -188,10 +189,10 @@ const Layout = ({ children, selectedWell, onWellSelect, uploadedData, uploadedWe
           <Box sx={{ 
             flex: 1, 
             overflow: 'auto', 
-            p: { xs: 1, sm: 2, md: 3 },
+            p: 0, // Removed padding for edge-to-edge dashboard layout
             display: 'flex',
             flexDirection: 'column',
-            gap: 2
+            gap: 0 // Removed gap for tighter layout
           }}>
             {children}
           </Box>

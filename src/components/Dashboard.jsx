@@ -38,13 +38,6 @@ const DashboardContainer = styled(Box)(({ theme }) => ({
   flex: 1,
   backgroundColor: '#f5f5f5',
   minHeight: '100vh',
-  padding: theme.spacing(1),
-  [theme.breakpoints.up('sm')]: {
-    padding: theme.spacing(2),
-  },
-  [theme.breakpoints.up('md')]: {
-    padding: theme.spacing(3),
-  },
 }));
 
 const ChartCard = styled(Card)(({ theme }) => ({
