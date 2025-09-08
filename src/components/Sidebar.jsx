@@ -63,8 +63,10 @@ const Sidebar = ({ selectedWell, onWellSelect, isMobile = false, uploadedWells =
 
   // Load wells from localStorage and combine with mock wells
   useEffect(() => {
+    console.log('Sidebar useEffect - uploadedWells changed:', uploadedWells);
     try {
       const storedWells = JSON.parse(localStorage.getItem('uploadedWells') || '[]');
+      console.log('Stored wells from localStorage:', storedWells);
       const combinedWells = [...mockWells, ...storedWells, ...uploadedWells];
       
       // Remove duplicates based on name and source
@@ -72,6 +74,7 @@ const Sidebar = ({ selectedWell, onWellSelect, isMobile = false, uploadedWells =
         index === self.findIndex(w => w.name === well.name && (w.source || 'mock') === (well.source || 'mock'))
       );
       
+      console.log('Final wells in sidebar:', uniqueWells);
       setAllWells(uniqueWells);
     } catch (error) {
       console.error('Error loading wells from localStorage:', error);

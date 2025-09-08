@@ -132,7 +132,7 @@ const InputContainer = styled(Box)(({ theme }) => ({
   },
 }));
 
-const Chatbot = ({ selectedWell, uploadedData }) => {
+const Chatbot = ({ selectedWell, uploadedData, onUpload }) => {
   const theme = useTheme();
   const [messages, setMessages] = useState([
     {
@@ -439,7 +439,16 @@ const Chatbot = ({ selectedWell, uploadedData }) => {
       try {
         let content = '';
         
-        if (file.type.startsWith('text/')) {
+        // Check if this is an Excel file that should be processed for drilling data
+        if (file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || 
+            file.type === 'application/vnd.ms-excel' ||
+            file.name.toLowerCase().endsWith('.xlsx') ||
+            file.name.toLowerCase().endsWith('.xls')) {
+          
+          // Show a message that Excel files should be uploaded through the Dashboard upload button
+          content = `⚠️ Excel file detected: ${file.name}\n\nFor drilling data analysis, please use the Upload button in the Dashboard toolbar instead. The chatbot file attachment is intended for documents and images, not drilling data files.\n\nThe Dashboard Upload button will:\n• Parse your drilling data properly\n• Add wells to the sidebar\n• Enable data visualization\n• Provide better data processing\n\nPlease use the green Upload button in the Dashboard to upload Excel files with drilling data.`;
+          
+        } else if (file.type.startsWith('text/')) {
           content = await file.text();
         } else if (file.type === 'application/pdf') {
           // For PDF files, you'd typically use a library like pdf-parse or PDF.js
@@ -467,6 +476,8 @@ const Chatbot = ({ selectedWell, uploadedData }) => {
         });
       }
     }
+    
+    // Note: Removed automatic upload modal triggering - users should use Dashboard Upload button
     
     setIsProcessingFiles(false);
     return fileContents;

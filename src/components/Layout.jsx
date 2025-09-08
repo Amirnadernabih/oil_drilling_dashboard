@@ -111,7 +111,7 @@ const ChatbotDrawer = styled(Drawer)(({ theme }) => ({
   },
 }));
 
-const Layout = ({ children, selectedWell, onWellSelect, uploadedData, uploadedWells }) => {
+const Layout = ({ children, selectedWell, onWellSelect, uploadedData, uploadedWells, onUpload }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const isTablet = useMediaQuery(theme.breakpoints.down('lg'));
@@ -203,6 +203,7 @@ const Layout = ({ children, selectedWell, onWellSelect, uploadedData, uploadedWe
           <Chatbot 
             selectedWell={selectedWell}
             uploadedData={uploadedData}
+            onUpload={onUpload}
           />
         </ChatbotContainer>
 
@@ -221,6 +222,7 @@ const Layout = ({ children, selectedWell, onWellSelect, uploadedData, uploadedWe
           <Chatbot 
             selectedWell={selectedWell}
             uploadedData={uploadedData}
+            onUpload={onUpload}
           />
         </ChatbotDrawer>
       </MainContainer>

@@ -149,6 +149,7 @@ const Upload = ({ onDataUpload, onWellsFound }) => {
   const [foundWells, setFoundWells] = useState([]);
 
   const processExcelFile = useCallback((file) => {
+    console.log('Processing Excel file:', file.name);
     setUploadStatus('uploading');
     setUploadMessage('Processing Excel file...');
     setUploadedFileName(file.name);
@@ -205,9 +206,13 @@ const Upload = ({ onDataUpload, onWellsFound }) => {
         setUploadStatus('success');
         setUploadMessage(`Successfully uploaded ${processedData.length} data points from ${file.name}${detectedWells.length > 0 ? ` and found ${detectedWells.length} well(s)` : ''}`);
         
+        console.log('Processed data:', processedData.length, 'points');
+        console.log('Detected wells:', detectedWells);
+        
         // Pass the processed data and wells to parent component
         onDataUpload(processedData);
         if (onWellsFound && detectedWells.length > 0) {
+          console.log('Calling onWellsFound with:', detectedWells);
           onWellsFound(detectedWells);
         }
         

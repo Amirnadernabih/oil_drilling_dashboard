@@ -16,6 +16,8 @@ import {
   Divider,
   useTheme,
   useMediaQuery,
+  Tooltip,
+  Fade,
 } from '@mui/material';
 import {
   ZoomIn as ZoomInIcon,
@@ -195,6 +197,161 @@ const Dashboard = ({
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const [filterMenuAnchor, setFilterMenuAnchor] = useState(null);
+  const [hoveredSegment, setHoveredSegment] = useState(null);
+  
+  // Direct file upload handler that bypasses the chatbot
+  const handleDirectUpload = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.xlsx,.xls';
+    input.onchange = async (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        console.log('Dashboard direct upload - processing file:', file.name);
+        
+        // Validate file type
+        const validTypes = [
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'application/vnd.ms-excel'
+        ];
+        
+        const isValidType = validTypes.some(type => file.type === type) || 
+                           file.name.toLowerCase().endsWith('.xlsx') || 
+                           file.name.toLowerCase().endsWith('.xls');
+
+        if (!isValidType) {
+          alert('Please select a valid Excel file (.xlsx or .xls)');
+          return;
+        }
+
+        // Validate file size (max 10MB)
+        if (file.size > 10 * 1024 * 1024) {
+          alert('File size must be less than 10MB');
+          return;
+        }
+        
+        try {
+          const XLSX = await import('xlsx');
+          const arrayBuffer = await file.arrayBuffer();
+          const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+          
+          if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+            throw new Error('No worksheets found in the Excel file');
+          }
+          
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          const jsonData = XLSX.utils.sheet_to_json(worksheet);
+          
+          if (jsonData.length === 0) {
+            throw new Error('No data found in the Excel file');
+          }
+          
+          console.log('Dashboard - parsed data:', jsonData.length, 'rows');
+          console.log('Dashboard - sample row:', jsonData[0]);
+          
+          // Process and normalize the data (similar to Upload component)
+          const processedData = jsonData.map((row, index) => {
+            // Handle different possible column names
+            const depth = parseFloat(row.Depth || row.depth || row.DEPTH || (index * 100)) || 0;
+            const dt = parseFloat(row.DT || row.dt || row.Dt || 0) || 0;
+            const gr = parseFloat(row.GR || row.gr || row.Gr || 0) || 0;
+            
+            // Handle rock composition
+            let rockComposition = row['Rock Composition'] || row.rockComposition || row.RockComposition || row.ROCK_COMPOSITION || 'Unknown';
+            
+            // Handle lithology percentages
+            const shalePercent = parseFloat(row.SH || row.sh || row.Shale || row.shale || row.shalePercent || 0) || 0;
+            const sandstonePercent = parseFloat(row.SS || row.ss || row.Sandstone || row.sandstone || row.sandstonePercent || 0) || 0;
+            const limestonePercent = parseFloat(row.LS || row.ls || row.Limestone || row.limestone || row.limestonePercent || 0) || 0;
+            
+            // If no rock composition specified, determine from percentages
+            if (rockComposition === 'Unknown' || !rockComposition) {
+              if (shalePercent > 0.6) {
+                rockComposition = 'Shale';
+              } else if (sandstonePercent > 0.6) {
+                rockComposition = 'Sandstone';
+              } else if (limestonePercent > 0.3) {
+                rockComposition = 'Limestone';
+              } else {
+                rockComposition = 'Mixed';
+              }
+            }
+            
+            return {
+              id: index + 1,
+              depth,
+              DT: dt,
+              GR: gr,
+              rockComposition,
+              shalePercent: shalePercent / 100 <= 1 ? shalePercent : shalePercent / 100,
+              sandstonePercent: sandstonePercent / 100 <= 1 ? sandstonePercent : sandstonePercent / 100,
+              limestonePercent: limestonePercent / 100 <= 1 ? limestonePercent : limestonePercent / 100
+            };
+          });
+          
+          console.log('Dashboard - processed data sample:', processedData[0]);
+          
+          // Extract wells from data
+          const uniqueWells = new Set();
+          jsonData.forEach(row => {
+            const wellName = row.Well || row.well || row.WELL || row.WellName || row.wellName;
+            if (wellName) {
+              uniqueWells.add(wellName);
+            }
+          });
+          
+          let wells = [];
+          if (uniqueWells.size > 0) {
+            wells = Array.from(uniqueWells).map(wellName => {
+              const wellData = processedData.filter(row => {
+                const rowWell = jsonData.find(r => r.id === row.id - 1);
+                return rowWell && (rowWell.Well || rowWell.well || rowWell.WELL || rowWell.WellName || rowWell.wellName) === wellName;
+              });
+              
+              return {
+                name: wellName,
+                depth: wellData.length > 0 ? Math.max(...wellData.map(d => d.depth)) : 0,
+                source: 'dashboard_upload'
+              };
+            });
+          } else {
+            // Create well from filename if no well column found
+            const wellName = file.name.replace(/\.[^/.]+$/, '');
+            const maxDepth = processedData.length > 0 ? Math.max(...processedData.map(d => d.depth)) : 0;
+            wells = [{
+              name: wellName,
+              depth: maxDepth,
+              source: 'dashboard_upload'
+            }];
+          }
+          
+          console.log('Dashboard - extracted wells:', wells);
+          
+          // Only call handlers if we have valid processed data
+          if (processedData.length > 0) {
+            if (onDataUpload) {
+              onDataUpload(processedData);
+            }
+            if (onWellsFound && wells.length > 0) {
+              onWellsFound(wells);
+            }
+            
+            alert(`Successfully uploaded ${processedData.length} data points from ${wells.length} well(s)`);
+          } else {
+            throw new Error('No valid data could be processed from the file');
+          }
+          
+        } catch (error) {
+          console.error('Dashboard upload error:', error);
+          alert(`Error processing file: ${error.message}\n\nPlease ensure the file contains columns like Depth, DT, GR, and optionally Well name and rock composition data.`);
+          // Don't clear existing data on error - just show the error message
+        }
+      }
+    };
+    input.click();
+  };
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const [openTabs, setOpenTabs] = useState([
     { label: 'Drilling Monitoring', value: 'drilling' },
     { label: 'Offset Wells Map', value: 'wells' },
@@ -372,7 +529,7 @@ const Dashboard = ({
             <Button
               variant="contained"
               startIcon={<UploadIcon />}
-              onClick={onUpload}
+              onClick={handleDirectUpload}
               size="small"
               sx={{
                 backgroundColor: 'green',
@@ -388,7 +545,7 @@ const Dashboard = ({
               Upload
             </Button>
           ) : (
-            <ActionButton onClick={onUpload} title="Upload" size="small">
+            <ActionButton onClick={handleDirectUpload} title="Upload" size="small">
               <UploadIcon fontSize="small" />
             </ActionButton>
           )}
@@ -550,6 +707,25 @@ const Dashboard = ({
                               height: `${height}%`,
                               backgroundColor: getRockColor(item),
                               borderTop: index === 0 ? 'none' : '0.5px solid rgba(255,255,255,0.2)',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s ease',
+                              '&:hover': {
+                                opacity: 0.8,
+                                transform: 'scaleX(1.02)',
+                                zIndex: 10,
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+                              }
+                            }}
+                            onMouseEnter={(e) => {
+                              setHoveredSegment(item);
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              setTooltipPosition({
+                                x: rect.right + 10,
+                                y: rect.top + rect.height / 2
+                              });
+                            }}
+                            onMouseLeave={() => {
+                              setHoveredSegment(null);
                             }}
                           />
                         );
@@ -578,6 +754,25 @@ const Dashboard = ({
                               height: `${height}%`,
                               backgroundColor: index % 3 === 0 ? rightColor : getRockColor(item),
                               borderTop: index === 0 ? 'none' : '0.5px solid rgba(255,255,255,0.2)',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s ease',
+                              '&:hover': {
+                                opacity: 0.8,
+                                transform: 'scaleX(1.02)',
+                                zIndex: 10,
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+                              }
+                            }}
+                            onMouseEnter={(e) => {
+                              setHoveredSegment(item);
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              setTooltipPosition({
+                                x: rect.right + 10,
+                                y: rect.top + rect.height / 2
+                              });
+                            }}
+                            onMouseLeave={() => {
+                              setHoveredSegment(null);
                             }}
                           />
                         );
@@ -788,6 +983,174 @@ const Dashboard = ({
               </Box>
             </CardContent>
           </ChartCard>
+          
+          {/* Enhanced Detailed Tooltip */}
+          {hoveredSegment && (
+            <Box
+              sx={{
+                position: 'fixed',
+                left: tooltipPosition.x,
+                top: tooltipPosition.y,
+                transform: 'translateY(-50%)',
+                backgroundColor: 'rgba(53, 53, 53, 0.95)',
+                color: '#fff',
+                p: 2,
+                borderRadius: '8px',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+                zIndex: 1000,
+                minWidth: '280px',
+                maxWidth: '320px',
+                border: '1px solid rgba(255,255,255,0.1)',
+                backdropFilter: 'blur(10px)',
+                pointerEvents: 'none'
+              }}
+            >
+              {/* Header with Depth */}
+              <Box sx={{ 
+                borderBottom: '1px solid rgba(255,255,255,0.2)', 
+                pb: 1, 
+                mb: 1.5,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}>
+                <Typography variant="h6" sx={{ 
+                  color: '#FFB74D', 
+                  fontWeight: 700, 
+                  fontSize: '16px',
+                  textShadow: '0 1px 2px rgba(0,0,0,0.5)'
+                }}>
+                  Depth: {hoveredSegment.depth} ft
+                </Typography>
+                <Box sx={{
+                  width: 12,
+                  height: 12,
+                  borderRadius: '50%',
+                  backgroundColor: getRockColor(hoveredSegment),
+                  border: '2px solid #fff',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
+                }} />
+              </Box>
+              
+              {/* Rock Composition Section */}
+              <Box sx={{ mb: 1.5 }}>
+                <Typography variant="subtitle2" sx={{ 
+                  color: '#E0E0E0', 
+                  fontWeight: 600, 
+                  fontSize: '12px',
+                  mb: 0.8,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}>
+                  Rock Composition
+                </Typography>
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.5 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Box sx={{ width: 8, height: 8, backgroundColor: '#FF6B9D', mr: 0.5, borderRadius: '2px' }} />
+                      <Typography sx={{ fontSize: '11px', color: '#FFF' }}>SH:</Typography>
+                    </Box>
+                    <Typography sx={{ fontSize: '11px', color: '#FFF', fontWeight: 600 }}>
+                      {(hoveredSegment.shalePercent * 100).toFixed(1)}%
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Box sx={{ width: 8, height: 8, backgroundColor: '#4FC3F7', mr: 0.5, borderRadius: '2px' }} />
+                      <Typography sx={{ fontSize: '11px', color: '#FFF' }}>SS:</Typography>
+                    </Box>
+                    <Typography sx={{ fontSize: '11px', color: '#FFF', fontWeight: 600 }}>
+                      {(hoveredSegment.sandstonePercent * 100).toFixed(1)}%
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Box sx={{ width: 8, height: 8, backgroundColor: '#FFD93D', mr: 0.5, borderRadius: '2px' }} />
+                      <Typography sx={{ fontSize: '11px', color: '#FFF' }}>LS:</Typography>
+                    </Box>
+                    <Typography sx={{ fontSize: '11px', color: '#FFF', fontWeight: 600 }}>
+                      {(hoveredSegment.limestonePercent * 100).toFixed(1)}%
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Box sx={{ width: 8, height: 8, backgroundColor: '#A5D6A7', mr: 0.5, borderRadius: '2px' }} />
+                      <Typography sx={{ fontSize: '11px', color: '#FFF' }}>DOL:</Typography>
+                    </Box>
+                    <Typography sx={{ fontSize: '11px', color: '#FFF', fontWeight: 600 }}>0.0%</Typography>
+                  </Box>
+                </Box>
+              </Box>
+              
+              {/* Drilling Parameters Section */}
+              <Box sx={{ 
+                borderTop: '1px solid rgba(255,255,255,0.1)', 
+                pt: 1.5 
+              }}>
+                <Typography variant="subtitle2" sx={{ 
+                  color: '#E0E0E0', 
+                  fontWeight: 600, 
+                  fontSize: '12px',
+                  mb: 0.8,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}>
+                  Drilling Parameters
+                </Typography>
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
+                  <Box sx={{ 
+                    backgroundColor: 'rgba(255, 183, 77, 0.1)', 
+                    p: 1, 
+                    borderRadius: '6px',
+                    border: '1px solid rgba(255, 183, 77, 0.3)'
+                  }}>
+                    <Typography sx={{ fontSize: '10px', color: '#FFB74D', fontWeight: 600, mb: 0.3 }}>
+                      DT (Delta Time)
+                    </Typography>
+                    <Typography sx={{ fontSize: '14px', color: '#FFB74D', fontWeight: 700 }}>
+                      {hoveredSegment.DT.toFixed(2)}
+                    </Typography>
+                    <Typography sx={{ fontSize: '9px', color: '#FFB74D', opacity: 0.8 }}>
+                      μs/ft
+                    </Typography>
+                  </Box>
+                  <Box sx={{ 
+                    backgroundColor: 'rgba(79, 195, 247, 0.1)', 
+                    p: 1, 
+                    borderRadius: '6px',
+                    border: '1px solid rgba(79, 195, 247, 0.3)'
+                  }}>
+                    <Typography sx={{ fontSize: '10px', color: '#4FC3F7', fontWeight: 600, mb: 0.3 }}>
+                      GR (Gamma Ray)
+                    </Typography>
+                    <Typography sx={{ fontSize: '14px', color: '#4FC3F7', fontWeight: 700 }}>
+                      {hoveredSegment.GR.toFixed(2)}
+                    </Typography>
+                    <Typography sx={{ fontSize: '9px', color: '#4FC3F7', opacity: 0.8 }}>
+                      API
+                    </Typography>
+                  </Box>
+                </Box>
+              </Box>
+              
+              {/* Additional Info */}
+              <Box sx={{ 
+                mt: 1.5, 
+                pt: 1, 
+                borderTop: '1px solid rgba(255,255,255,0.1)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}>
+                <Typography sx={{ fontSize: '9px', color: '#B0B0B0', fontStyle: 'italic' }}>
+                  Well: {selectedWell?.name}
+                </Typography>
+                <Typography sx={{ fontSize: '9px', color: '#B0B0B0' }}>
+                  Formation Analysis
+                </Typography>
+              </Box>
+            </Box>
+          )}
         </>
       ) : (
         <Box sx={{ textAlign: 'center', mt: 8 }}>

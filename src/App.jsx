@@ -128,17 +128,28 @@ function App() {
 
   // Handle file upload (manual override)
   const handleDataUpload = (data) => {
-    setUploadedData(data);
+    console.log('handleDataUpload called with:', data ? data.length + ' data points' : 'null');
+    // Only update state if we have valid data, don't clear existing data on null/undefined
+    if (data && Array.isArray(data) && data.length > 0) {
+      setUploadedData(data);
+    } else if (data === null) {
+      // Explicitly clear data only when null is passed (e.g., from Upload component's clearUpload)
+      setUploadedData(null);
+    }
+    // If data is undefined or empty array, don't change the current state
   };
 
   // Handle wells found in uploaded files
   const handleWellsFound = (wells) => {
+    console.log('handleWellsFound called with:', wells);
     setUploadedWells(prev => {
       const combined = [...prev, ...wells];
       // Remove duplicates based on name and source
-      return combined.filter((well, index, self) => 
+      const result = combined.filter((well, index, self) => 
         index === self.findIndex(w => w.name === well.name && w.source === well.source)
       );
+      console.log('Updated uploadedWells:', result);
+      return result;
     });
   };
 
@@ -154,8 +165,16 @@ function App() {
     setZoomLevel(prev => Math.max(prev - 10, 50));
   };
 
-  const handleUpload = () => {
+  const handleUpload = (files) => {
+    console.log('Upload button clicked - opening modal');
     setShowUploadModal(true);
+    // Store the files temporarily if they were passed from the chatbot
+    if (files && files.length > 0) {
+      sessionStorage.setItem('pendingUploadFiles', JSON.stringify({
+        timestamp: Date.now(),
+        fileNames: files.map(file => file.name)
+      }));
+    }
   };
 
   const handleCloseUploadModal = () => {
@@ -186,6 +205,7 @@ function App() {
         onWellSelect={handleWellSelect}
         uploadedData={uploadedData}
         uploadedWells={uploadedWells}
+        onUpload={handleUpload}
       >
         <Dashboard
           selectedWell={selectedWell}
