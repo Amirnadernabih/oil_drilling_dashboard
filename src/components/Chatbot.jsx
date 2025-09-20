@@ -20,6 +20,7 @@ import {
   Person as PersonIcon,
   Mic as MicIcon,
   MicOff as MicOffIcon,
+  Close as CloseIcon,
   AttachFile as AttachFileIcon,
   Stop as StopIcon,
   ClearAll as ClearAllIcon,
@@ -132,7 +133,7 @@ const InputContainer = styled(Box)(({ theme }) => ({
   },
 }));
 
-const Chatbot = ({ selectedWell, uploadedData, onUpload }) => {
+const Chatbot = ({ selectedWell, uploadedData, onUpload, onClose }) => {
   const theme = useTheme();
   const [messages, setMessages] = useState([
     {
@@ -523,20 +524,39 @@ const Chatbot = ({ selectedWell, uploadedData, onUpload }) => {
               AI Assistant
             </Typography>
           </Box>
-          <IconButton
-            onClick={clearHistory}
-            size="small"
-            sx={{
-              color: '#666',
-              '&:hover': {
-                backgroundColor: '#f0f0f0',
-                color: '#1976d2',
-              },
-            }}
-            title="Clear History"
-          >
-            <ClearAllIcon fontSize="small" />
-          </IconButton>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {/* Mobile-only close button */}
+            {onClose && (
+              <IconButton
+                onClick={onClose}
+                size="small"
+                sx={{
+                  color: 'white',
+                  display: { xs: 'inline-flex', sm: 'none' },
+                  ml: 1,
+                }}
+                aria-label="Close chat"
+                title="Close"
+              >
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            )}
+            <IconButton
+              onClick={clearHistory}
+              size="small"
+              sx={{
+                color: '#666',
+                '&:hover': {
+                  backgroundColor: '#f0f0f0',
+                  color: '#1976d2',
+                },
+                display: { xs: 'none', sm: 'inline-flex' }
+              }}
+              title="Clear History"
+            >
+              <ClearAllIcon fontSize="small" />
+            </IconButton>
+          </Box>
         </Box>
       </ChatHeader>
 
@@ -803,7 +823,7 @@ const Chatbot = ({ selectedWell, uploadedData, onUpload }) => {
               multiline
               maxRows={4}
               size="small"
-              placeholder={isRecording ? 'Listening...' : (selectedWell ? `Ask about ${selectedWell.name} data...` : "Ask about drilling data...")}
+              placeholder={isRecording ? 'Listening...' : (selectedWell ? `Ask about ${selectedWell.name}` : "Ask about drilling data...")}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={handleKeyPress}

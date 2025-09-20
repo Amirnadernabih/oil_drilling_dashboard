@@ -61,11 +61,17 @@ const ChatbotContainer = styled(Box)(({ theme }) => ({
 
 const MobileMenuButton = styled(IconButton)(({ theme }) => ({
   position: 'fixed',
-  top: '72px',
-  left: '16px',
-  zIndex: theme.zIndex.fab,
+  // Align with the right side of the top navbar on mobile
+  top: '12px',
+  right: '12px',
+  // Ensure button sits above Navbar (Navbar sets zIndex to drawer + 1)
+  zIndex: theme.zIndex.drawer + 10,
   backgroundColor: theme.palette.primary.main,
   color: 'white',
+  width: 40,
+  height: 40,
+  padding: 6,
+  boxShadow: theme.shadows[2],
   '&:hover': {
     backgroundColor: theme.palette.primary.dark,
   },
@@ -223,6 +229,7 @@ const Layout = ({ children, selectedWell, onWellSelect, uploadedData, uploadedWe
             selectedWell={selectedWell}
             uploadedData={uploadedData}
             onUpload={onUpload}
+            onClose={() => setChatbotDrawerOpen(false)}
           />
         </ChatbotDrawer>
       </MainContainer>
