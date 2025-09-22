@@ -1,4 +1,3 @@
-// Mock data generated from Excel file
 export const wellsData = {
   "Well A": [
     {

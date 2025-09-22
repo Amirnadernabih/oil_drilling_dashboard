@@ -20,8 +20,6 @@ const StyledAppBar = styled(AppBar)(({ theme }) => ({
   },
 }));
 
-
-
 const Navbar = () => {
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));

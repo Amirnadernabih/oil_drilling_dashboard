@@ -14,7 +14,6 @@ import Layout from './components/Layout';
 import Upload from './components/Upload';
 import * as XLSX from 'xlsx';
 
-// Mock well data matching the design
 const mockWells = [
   { id: 1, name: 'Well A', depth: 5000, displayDepth: '5000 ft', status: 'active' },
   { id: 2, name: 'Well AA', depth: 4500, displayDepth: '4500 ft', status: 'active' },
@@ -22,17 +21,15 @@ const mockWells = [
   { id: 4, name: 'Well B', depth: 4800, displayDepth: '4800 ft', status: 'active' },
 ];
 
-// Lithology keys expected from the reference sheet
 const LITHO_KEYS = ['SH','SI','BSS','LSS','LS','DOL','ANH','Coal','Sat'];
 
-// Create Material-UI theme matching the design
 const theme = createTheme({
   palette: {
     primary: {
-      main: '#FF6B35', // Orange color from design
+      main: '#FF6B35',
     },
     secondary: {
-      main: '#2196F3', // Blue color for buttons
+      main: '#2196F3',
     },
     background: {
       default: '#f8f9fa',
@@ -55,7 +52,7 @@ const theme = createTheme({
 });
 
 function App() {
-  const [selectedWell, setSelectedWell] = useState(mockWells[0]); // Initialize with first well
+  const [selectedWell, setSelectedWell] = useState(mockWells[0]);
   const [uploadedData, setUploadedData] = useState(null);
   const [uploadedWells, setUploadedWells] = useState([]);
   const [activeTab, setActiveTab] = useState('drilling');
@@ -63,11 +60,9 @@ function App() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
-  // Auto-load the reference Excel to drive charts exactly like the provided design
   useEffect(() => {
     const loadReferenceExcel = async () => {
       try {
-        // Resolve the file URL via Vite asset handling
         const excelUrl = new URL('../reference/oil_drilling_interview_dummy_number.xlsx', import.meta.url).href;
         const res = await fetch(excelUrl);
         const buffer = await res.arrayBuffer();
@@ -78,9 +73,7 @@ function App() {
 
         if (!json || json.length === 0) return;
 
-        // Normalize rows to the structure our charts expect
         const normalize = (row, index) => {
-          // Try common key variants
           const depthVal = row.Depth ?? row.DEPTH ?? row.depth ?? row['Depth(ft)'] ?? row['Depth (ft)'] ?? (index * 10 + 1200);
           const rockVal = row['Rock Composition'] ?? row['Rock Type'] ?? row.rockComposition ?? row.ROCK_TYPE ?? row.Rock ?? 'Unknown';
           const dtVal = row.DT ?? row.dt ?? row['Delta T'] ?? row.Delta_T ?? row['DT(us/ft)'] ?? row['DT (us/ft)'] ?? 0;
@@ -98,7 +91,6 @@ function App() {
             GR: toNum(grVal, 0),
           };
 
-          // Copy lithology proportions if present
           LITHO_KEYS.forEach((k) => {
             if (row[k] !== undefined) {
               out[k] = toNum(row[k], 0);
@@ -111,7 +103,6 @@ function App() {
         const processed = json.map(normalize).filter(r => Number.isFinite(r.depth));
         processed.sort((a, b) => a.depth - b.depth);
 
-        // Save to state
         setUploadedData(processed);
       } catch (e) {
         console.error('Failed to load reference excel:', e);
@@ -121,25 +112,20 @@ function App() {
     loadReferenceExcel();
   }, []);
 
-  // Handle well selection
   const handleWellSelect = (well) => {
     setSelectedWell(well);
   };
 
-  // Handle file upload (manual override)
+  // Only update state if we have valid data, don't clear existing data on null/undefined
   const handleDataUpload = (data) => {
     console.log('handleDataUpload called with:', data ? data.length + ' data points' : 'null');
-    // Only update state if we have valid data, don't clear existing data on null/undefined
     if (data && Array.isArray(data) && data.length > 0) {
       setUploadedData(data);
     } else if (data === null) {
-      // Explicitly clear data only when null is passed (e.g., from Upload component's clearUpload)
       setUploadedData(null);
     }
-    // If data is undefined or empty array, don't change the current state
   };
 
-  // Handle wells found in uploaded files
   const handleWellsFound = (wells) => {
     console.log('handleWellsFound called with:', wells);
     setUploadedWells(prev => {
@@ -168,7 +154,6 @@ function App() {
   const handleUpload = (files) => {
     console.log('Upload button clicked - opening modal');
     setShowUploadModal(true);
-    // Store the files temporarily if they were passed from the chatbot
     if (files && files.length > 0) {
       sessionStorage.setItem('pendingUploadFiles', JSON.stringify({
         timestamp: Date.now(),
@@ -183,7 +168,6 @@ function App() {
 
   const handleFilter = (filterType) => {
     console.log('Filter applied:', filterType);
-    // Implement filter logic based on filterType
   };
 
   const navbarProps = {
@@ -193,7 +177,7 @@ function App() {
     onZoomOut: handleZoomOut,
     onUpload: handleUpload,
     onFilter: handleFilter,
-    onChatbotToggle: () => {}, // Will be handled by Layout component
+    onChatbotToggle: () => {},
     zoomLevel,
   };
 
@@ -222,7 +206,6 @@ function App() {
         />
       </Layout>
       
-      {/* Upload Modal */}
       <Dialog 
         open={showUploadModal} 
         onClose={handleCloseUploadModal}

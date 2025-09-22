@@ -32,7 +32,7 @@ const WellListItem = styled(ListItemButton)(({ theme, selected }) => ({
   paddingRight: theme.spacing(2),
   paddingTop: theme.spacing(2),
   paddingBottom: theme.spacing(2),
-  minHeight: '56px', // Touch-friendly minimum height
+  minHeight: '56px',
   transition: 'all 0.2s ease-in-out',
   '&:hover': {
     backgroundColor: selected ? '#E3F2FD' : '#F5F5F5',
@@ -41,16 +41,14 @@ const WellListItem = styled(ListItemButton)(({ theme, selected }) => ({
   '&:active': {
     transform: 'scale(0.98)',
   },
-  // Mobile-specific styles
   [theme.breakpoints.down('md')]: {
     paddingTop: theme.spacing(2.5),
     paddingBottom: theme.spacing(2.5),
-    minHeight: '64px', // Larger touch target on mobile
+    minHeight: '64px',
     fontSize: '1rem',
   },
 }));
 
-// Mock well data matching the design
 const mockWells = [
   { id: 1, name: 'Well A', depth: 5000, displayDepth: '5000 ft', status: 'active' },
   { id: 2, name: 'Well AA', depth: 4500, displayDepth: '4500 ft', status: 'active' },
@@ -69,7 +67,6 @@ const Sidebar = ({ selectedWell, onWellSelect, isMobile = false, uploadedWells =
       console.log('Stored wells from localStorage:', storedWells);
       const combinedWells = [...mockWells, ...storedWells, ...uploadedWells];
       
-      // Remove duplicates based on name and source
       const uniqueWells = combinedWells.filter((well, index, self) => 
         index === self.findIndex(w => w.name === well.name && (w.source || 'mock') === (well.source || 'mock'))
       );

@@ -35,7 +35,7 @@ const SidebarContainer = styled(Box)(({ theme }) => ({
   backgroundColor: '#ffffff',
   borderRight: '1px solid #e0e0e0',
   [theme.breakpoints.down('md')]: {
-    display: 'none', // Hide on mobile/tablet, use drawer instead
+    display: 'none',
   },
 }));
 
@@ -43,9 +43,9 @@ const ContentArea = styled(Box)(({ theme }) => ({
   flex: 1,
   display: 'flex',
   flexDirection: 'column',
-  minWidth: 0, // Prevent flex item from overflowing
+  minWidth: 0,
   [theme.breakpoints.down('lg')]: {
-    marginRight: 0, // Remove chatbot margin on smaller screens
+    marginRight: 0,
   },
 }));
 
@@ -55,16 +55,14 @@ const ChatbotContainer = styled(Box)(({ theme }) => ({
   backgroundColor: '#ffffff',
   borderLeft: '1px solid #e0e0e0',
   [theme.breakpoints.down('lg')]: {
-    display: 'none', // Hide chatbot on tablets and mobile
+    display: 'none',
   },
 }));
 
 const MobileMenuButton = styled(IconButton)(({ theme }) => ({
   position: 'fixed',
-  // Align with the right side of the top navbar on mobile
   top: '12px',
   right: '12px',
-  // Ensure button sits above Navbar (Navbar sets zIndex to drawer + 1)
   zIndex: theme.zIndex.drawer + 10,
   backgroundColor: theme.palette.primary.main,
   color: 'white',
@@ -128,7 +126,7 @@ const Layout = ({ children, selectedWell, onWellSelect, uploadedData, uploadedWe
   const handleWellSelect = (well) => {
     onWellSelect(well);
     if (isMobile) {
-      setMobileDrawerOpen(false); // Close drawer after selection on mobile
+      setMobileDrawerOpen(false);
     }
   };
 
@@ -174,7 +172,7 @@ const Layout = ({ children, selectedWell, onWellSelect, uploadedData, uploadedWe
           onClose={() => setMobileDrawerOpen(false)}
           variant="temporary"
           ModalProps={{
-            keepMounted: true, // Better open performance on mobile
+            keepMounted: true,
           }}
         >
           <Box sx={{ p: 1, display: 'flex', justifyContent: 'flex-end' }}>
@@ -195,10 +193,10 @@ const Layout = ({ children, selectedWell, onWellSelect, uploadedData, uploadedWe
           <Box sx={{ 
             flex: 1, 
             overflow: 'auto', 
-            p: 0, // Removed padding for edge-to-edge dashboard layout
+            p: 0,
             display: 'flex',
             flexDirection: 'column',
-            gap: 0 // Removed gap for tighter layout
+            gap: 0
           }}>
             {children}
           </Box>

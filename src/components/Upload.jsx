@@ -74,12 +74,10 @@ const extractWellsFromData = (jsonData, fileName) => {
   const wells = [];
   const wellColumns = ['Well', 'Well Name', 'WellName', 'WELL', 'well', 'Well_Name'];
   
-  // Check if any well-related columns exist
   const firstRow = jsonData[0] || {};
   const wellColumn = wellColumns.find(col => firstRow.hasOwnProperty(col));
   
   if (wellColumn) {
-    // Extract unique well names
     const uniqueWells = [...new Set(jsonData.map(row => row[wellColumn]).filter(Boolean))];
     
     uniqueWells.forEach((wellName, index) => {
@@ -100,7 +98,6 @@ const extractWellsFromData = (jsonData, fileName) => {
       });
     });
   } else {
-    // If no well column found, create a well based on the file name
     const wellName = fileName.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ');
     const maxDepth = Math.max(...jsonData.map(row => {
       const depth = row.Depth || row.depth || row.DEPTH || 0;
@@ -130,7 +127,6 @@ const saveToLocalStorage = (uploadData) => {
     const updatedUploads = [...existingUploads, uploadData];
     localStorage.setItem('uploadedFiles', JSON.stringify(updatedUploads));
     
-    // Also save wells separately for easy access
     if (uploadData.wells && uploadData.wells.length > 0) {
       const existingWells = JSON.parse(localStorage.getItem('uploadedWells') || '[]');
       const updatedWells = [...existingWells, ...uploadData.wells];
@@ -160,20 +156,16 @@ const Upload = ({ onDataUpload, onWellsFound }) => {
         const data = new Uint8Array(e.target.result);
         const workbook = XLSX.read(data, { type: 'array' });
         
-        // Get the first worksheet
         const firstSheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[firstSheetName];
         
-        // Convert to JSON
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
         
         if (jsonData.length === 0) {
           throw new Error('No data found in the Excel file');
         }
 
-        // Process and normalize the data
         const processedData = jsonData.map((row, index) => {
-          // Handle different possible column names
           const depth = row.Depth || row.depth || row.DEPTH || index * 100;
           const rockComposition = row['Rock Composition'] || row.rockComposition || row.ROCK_COMPOSITION || row.Rock || 'Unknown';
           const DT = parseFloat(row.DT || row.dt || row.Delta_T || row['Delta T'] || 0);
@@ -187,13 +179,10 @@ const Upload = ({ onDataUpload, onWellsFound }) => {
           };
         });
 
-        // Sort by depth
         processedData.sort((a, b) => a.depth - b.depth);
 
-        // Extract well information from the data
         const detectedWells = extractWellsFromData(jsonData, file.name);
         
-        // Save to localStorage
         const uploadData = {
           fileName: file.name,
           uploadDate: new Date().toISOString(),
@@ -209,7 +198,6 @@ const Upload = ({ onDataUpload, onWellsFound }) => {
         console.log('Processed data:', processedData.length, 'points');
         console.log('Detected wells:', detectedWells);
         
-        // Pass the processed data and wells to parent component
         onDataUpload(processedData);
         if (onWellsFound && detectedWells.length > 0) {
           console.log('Calling onWellsFound with:', detectedWells);

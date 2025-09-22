@@ -146,15 +146,12 @@ const Chatbot = ({ selectedWell, uploadedData, onUpload, onClose }) => {
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
-  // Voice recording states
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState(null);
   const [audioBlob, setAudioBlob] = useState(null);
   
-  // File upload states
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [isProcessingFiles, setIsProcessingFiles] = useState(false);
-
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -169,10 +166,8 @@ const Chatbot = ({ selectedWell, uploadedData, onUpload, onClose }) => {
   const handleSendMessage = async () => {
     if ((!inputValue.trim() && selectedFiles.length === 0) || isLoading) return;
 
-    // Check if this is a voice message
     const isVoiceMessage = inputValue.includes('Voice message') || audioBlob;
 
-    // Process files if any are selected
     let processedFiles = [];
     if (selectedFiles.length > 0) {
       processedFiles = await processFiles(selectedFiles);
@@ -250,10 +245,8 @@ const Chatbot = ({ selectedWell, uploadedData, onUpload, onClose }) => {
     }
   };
 
-  // Voice recording functions with real-time speech recognition
   const startRecording = async () => {
     try {
-      // Check if browser supports Web Speech API for real-time transcription
       if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const recognition = new SpeechRecognition();
@@ -324,9 +317,9 @@ const Chatbot = ({ selectedWell, uploadedData, onUpload, onClose }) => {
   const stopRecording = () => {
     if (mediaRecorder && isRecording) {
       if (mediaRecorder.stop) {
-        mediaRecorder.stop(); // For MediaRecorder
+        mediaRecorder.stop();
       } else if (mediaRecorder.abort) {
-        mediaRecorder.abort(); // For SpeechRecognition
+        mediaRecorder.abort();
       }
       setIsRecording(false);
     }
@@ -334,7 +327,6 @@ const Chatbot = ({ selectedWell, uploadedData, onUpload, onClose }) => {
 
   const transcribeAudio = async (audioBlob) => {
     return new Promise((resolve, reject) => {
-      // Check if browser supports Web Speech API
       if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
         console.warn('Speech recognition not supported, using placeholder');
         resolve('Voice message recorded (Speech recognition not supported in this browser)');
@@ -367,7 +359,6 @@ const Chatbot = ({ selectedWell, uploadedData, onUpload, onClose }) => {
       try {
         recognition.start();
         
-        // Stop recognition after 10 seconds if no result
         setTimeout(() => {
           recognition.stop();
           resolve('Voice message recorded (Transcription timeout)');
@@ -446,16 +437,13 @@ const Chatbot = ({ selectedWell, uploadedData, onUpload, onClose }) => {
             file.name.toLowerCase().endsWith('.xlsx') ||
             file.name.toLowerCase().endsWith('.xls')) {
           
-          // Show a message that Excel files should be uploaded through the Dashboard upload button
           content = `⚠️ Excel file detected: ${file.name}\n\nFor drilling data analysis, please use the Upload button in the Dashboard toolbar instead. The chatbot file attachment is intended for documents and images, not drilling data files.\n\nThe Dashboard Upload button will:\n• Parse your drilling data properly\n• Add wells to the sidebar\n• Enable data visualization\n• Provide better data processing\n\nPlease use the green Upload button in the Dashboard to upload Excel files with drilling data.`;
           
         } else if (file.type.startsWith('text/')) {
           content = await file.text();
         } else if (file.type === 'application/pdf') {
-          // For PDF files, you'd typically use a library like pdf-parse or PDF.js
           content = `[PDF File: ${file.name} - ${(file.size / 1024).toFixed(1)}KB]`;
         } else if (file.type.startsWith('image/')) {
-          // For images, you might want to use OCR or just show file info
           content = `[Image File: ${file.name} - ${(file.size / 1024).toFixed(1)}KB]`;
         } else {
           content = `[File: ${file.name} - ${(file.size / 1024).toFixed(1)}KB]`;
