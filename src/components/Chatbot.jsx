@@ -33,7 +33,7 @@ import { getChatbotResponse } from '../api/chatbot';
 
 const ChatContainer = styled(Paper)(({ theme }) => ({
   width: '100%',
-  height: '100%',
+  height: '100%', // Keep only this addition
   display: 'flex',
   flexDirection: 'column',
   borderRadius: { xs: '8px', sm: '12px' },
@@ -66,6 +66,7 @@ const ChatHeader = styled(Box)(({ theme }) => ({
 const MessagesContainer = styled(Box)(({ theme }) => ({
   flex: 1,
   overflow: 'auto',
+  maxHeight: '100vh',
   padding: theme.spacing(1),
   backgroundColor: theme.palette.grey[50],
   minHeight: 0, // Ensures proper flex behavior
@@ -83,6 +84,7 @@ const MessagesContainer = styled(Box)(({ theme }) => ({
     },
   },
 }));
+
 
 const MessageBubble = styled(Box, {
   shouldForwardProp: (prop) => prop !== 'isUser',
