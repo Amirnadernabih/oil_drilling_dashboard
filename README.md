@@ -258,3 +258,4 @@ npm run preview
 3. Use natural language for queries
 4. Access chat history and be able to clear it
 
+DEMO Video: https://www.loom.com/share/9f45d1e0e7ec4dae9170657aa94fb1a1?sid=94dbb590-3c2e-45f2-9767-63d6d83f6769
